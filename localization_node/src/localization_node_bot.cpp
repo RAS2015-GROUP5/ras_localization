@@ -14,11 +14,10 @@ localization_node::localization_node()
 
     vis_pub_ = n_.advertise<visualization_msgs::Marker>( "/visualization/dr", 10 ); //topic name to be changed
 
-    pose_pub_ = n_.advertise<geometry_msgs::PoseArray>("/particles",100);
+    dr_pub_ = n_.advertise<geometry_msgs::PoseArray>("/particles",100);
 
-    right_ir_loc_pub_ = n_.advertise<visualization_msgs::Marker>( "/visualization/rightir", 10 ); //topic name to be changed
+    mean_pub_ = n_.advertise<visualization_msgs::Marker>( "/mean", 10 );
 
-    left_ir_loc_pub_ = n_.advertise<visualization_msgs::Marker>( "/visualization/leftir", 10 ); //topic name to be changed
 
     //Subscribers
 
@@ -37,14 +36,19 @@ localization_node::localization_node()
 
     std::normal_distribution<> mini_gauss(0.25);
 
+    alpha_ = 0.7;
+    variance_ = 0;
+
 
     degrees_per_tick_ = 1.0;
     epsilon_= 0.001;
 
 
-    pose_.x = 0.3;
-    pose_.y = 0.3;
-    pose_.theta = 0.0;
+    pose_.x = INIT_X;
+    pose_.y = INIT_Y;
+    pose_.theta = INIT_THETA;
+
+    mean_angle_ = 0;
 
 
     b_ = 0.21; //Wheel base
@@ -54,11 +58,11 @@ localization_node::localization_node()
 
     callback_counter = 0;
 
-    mega_delta_x_=0;
+    mega_delta_x_= 0;
 
-    mega_delta_y_=0;
+    mega_delta_y_= 0;
 
-    mega_delta_theta_=0;
+    mega_delta_theta_ = 0;
 
     x_offset_ = 0.10; //Sensor offset from center of the robot
     y_offset_ = 0.13;
@@ -67,9 +71,16 @@ localization_node::localization_node()
     y_fw_offset_ = 0.13;
 
 
+
+    median_fl = median_fr = median_lf = median_lb = median_rf = median_rb = std::vector<double>(4,0);
+
+
+
+
+
     //Dead Reckoning Section
 
-
+    /*
     //Walls//
     map_segments[0].x1 = 0;map_segments[0].y1=0; map_segments[0].x2=372;map_segments[0].y2=0; //Correct
     map_segments[1].x1 = 0;map_segments[1].y1=66; map_segments[1].x2=0;map_segments[1].y2=366; //Correct
@@ -95,22 +106,60 @@ localization_node::localization_node()
     map_segments[14].x1 = 180;map_segments[14].y1=276; map_segments[14].x2=240;map_segments[14].y2=276; //Correct
 
 
-    for(i=0;i<=14;i++) //For running on the real robot;
+    for(int i=0;i<=14;i++) //For running on the real robot;
     {
-        map_segments[i].x1 = map_segments[i].x1/1.5;
-        map_segments[i].y1 = map_segments[i].y1/1.5;
-        map_segments[i].x2 = map_segments[i].x2/1.5;
-        map_segments[i].y2 = map_segments[i].y2/1.5;
+        map_segments[i].x1 = map_segments[i].x1/1.50;
+        map_segments[i].y1 = map_segments[i].y1/1.50;
+        map_segments[i].x2 = map_segments[i].x2/1.50;
+        map_segments[i].y2 = map_segments[i].y2/1.50;
     }
 
 
-    for(i=0;i<=14;i++) //I Messed up the map coordinates, converting to m;
+    for(int i=0;i<=14;i++) //I Messed up the map coordinates, converting to m;
     {
-        map_segments[i].x1 = map_segments[i].x1/100; //metres
-        map_segments[i].y1 = map_segments[i].y1/100; //metres
-        map_segments[i].x2 = map_segments[i].x2/100; //metres
-        map_segments[i].y2 = map_segments[i].y2/100; //metres
+        map_segments[i].x1 = map_segments[i].x1/100.0; //metres
+        map_segments[i].y1 = map_segments[i].y1/100.0; //metres
+        map_segments[i].x2 = map_segments[i].x2/100.0; //metres
+        map_segments[i].y2 = map_segments[i].y2/100.0; //metres
     }
+
+*/
+
+    //Test maze walls
+
+    //Walls//
+
+    if(TEST_MAZE==1)
+    {
+        map_segments[0].x1 = 0;map_segments[0].y1=0; map_segments[0].x2=4.8;map_segments[0].y2=0; //Correct
+        map_segments[1].x1 = 4.8; map_segments[1].y1=0; map_segments[1].x2=4.8;map_segments[1].y2=2.4; //Correct
+        map_segments[2].x1 = 4.8; map_segments[2].y1=2.4; map_segments[2].x2=0;map_segments[2].y2=2.4; //Correct
+        map_segments[3].x1 = 0;map_segments[3].y1=2.4; map_segments[3].x2=0;map_segments[3].y2=0; //Correct
+
+        //Interior free walls//
+        map_segments[4].x1 = 0.8;map_segments[4].y1=2; map_segments[4].x2=1.6;map_segments[4].y2=2.0; //Correct
+        map_segments[5].x1 = 1.6;map_segments[5].y1=2.0; map_segments[5].x2=1.6;map_segments[5].y2=1.2; //Correct
+        map_segments[6].x1 = 1.6;map_segments[6].y1=1.2; map_segments[6].x2=0.8;map_segments[6].y2=1.2; //Correct
+
+
+        //Interior Walls//
+
+
+        map_segments[7].x1 = 0;map_segments[7].y1=0.4; map_segments[7].x2=2.0;map_segments[7].y2=0.4; //Correct
+        map_segments[8].x1 = 0.4;map_segments[8].y1=0.8; map_segments[8].x2=0.4;map_segments[8].y2=1.2; //Correct
+        map_segments[9].x1 = 0.4;map_segments[9].y1=0.8; map_segments[9].x2=2.4;map_segments[9].y2=0.8; //Correct
+        map_segments[10].x1 = 2.4;map_segments[10].y1=0; map_segments[10].x2=2.4;map_segments[10].y2=0; //Correct
+        map_segments[11].x1 = 2.8;map_segments[11].y1=2.4; map_segments[11].x2=2.8;map_segments[11].y2=0.4; //Correct
+    }
+
+    else
+    {
+        std::cout<<"Wrong map";
+    }
+
+
+
+
 
 
     //Particle filter section
@@ -118,91 +167,53 @@ localization_node::localization_node()
 
     //Marker section//
 
-    marker.header.frame_id = "/map";
-    marker.header.stamp = ros::Time();
-    marker.ns = "my_namespace";
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::SPHERE;
+    dr_marker.header.frame_id = "/map";
+    dr_marker.header.stamp = ros::Time();
+    dr_marker.ns = "my_namespace";
+    dr_marker.id = 0;
+    dr_marker.type = visualization_msgs::Marker::SPHERE;
 
-
-    int_marker.header.frame_id = "/map";
-    int_marker.header.stamp = ros::Time();
-    int_marker.ns = "int_marker";
-    int_marker.type = visualization_msgs::Marker::CUBE;
-    int_marker.action = visualization_msgs::Marker::ADD;
-    int_marker.scale.x = 0.1;
-    int_marker.scale.y = 0.1;
-    int_marker.scale.z = 0.1;
-    int_marker.color.a = 1.0; // Don't forget to set the alpha!
-    int_marker.color.r = 0.0;
-    int_marker.color.g = 0.0;
-    int_marker.color.b = 1.0;
-
-    int_marker.pose.position.x = 0;
-    int_marker.pose.position.y = 0;
-    int_marker.pose.position.z = 0;
-
-
-    //
-
-
-    right_ir_marker.header.frame_id = "/map";
-    right_ir_marker.header.stamp = ros::Time();
-    right_ir_marker.ns = "right_ir_marker";
-    right_ir_marker.type = visualization_msgs::Marker::SPHERE;
-    right_ir_marker.action = visualization_msgs::Marker::ADD;
-    right_ir_marker.scale.x = 0.1;
-    right_ir_marker.scale.y = 0.1;
-    right_ir_marker.scale.z = 0.1;
-    right_ir_marker.color.a = 1.0; // Don't forget to set the alpha!
-    right_ir_marker.color.r = 0.0;
-    right_ir_marker.color.g = 1.0;
-    right_ir_marker.color.b = 0.0;
-
-    right_ir_marker.pose.position.x = 0;
-    right_ir_marker.pose.position.y = 0;
-    right_ir_marker.pose.position.z = 0;
-
-    //
-
-
-    left_ir_marker.header.frame_id = "/map";
-    left_ir_marker.header.stamp = ros::Time();
-    left_ir_marker.ns = "left_ir_marker";
-    left_ir_marker.type = visualization_msgs::Marker::SPHERE;
-    left_ir_marker.action = visualization_msgs::Marker::ADD;
-    left_ir_marker.scale.x = 0.1;
-    left_ir_marker.scale.y = 0.1;
-    left_ir_marker.scale.z = 0.1;
-    left_ir_marker.color.a = 1.0; // Don't forget to set the alpha!
-    left_ir_marker.color.r = 0.0;
-    left_ir_marker.color.g = 0.0;
-    left_ir_marker.color.b = 1.0;
-
-    left_ir_marker.pose.position.x = 0;
-    left_ir_marker.pose.position.y = 0;
-    left_ir_marker.pose.position.z = 0;
-
-    //
+    dr_marker.action = visualization_msgs::Marker::ADD;
+    dr_marker.pose.position.x = INIT_X;
+    dr_marker.pose.position.y = INIT_Y;
+    dr_marker.pose.position.z = INIT_THETA;
+    dr_marker.pose.orientation.x = 0.0;
+    dr_marker.pose.orientation.y = 0.0;
+    dr_marker.pose.orientation.z = 0.0;
+    dr_marker.pose.orientation.w = 1.0;
+    dr_marker.scale.x = 0.1;
+    dr_marker.scale.y = 0.1;
+    dr_marker.scale.z = 0.1;
+    dr_marker.color.a = 1.0; // Don't forget to set the alpha!
+    dr_marker.color.r = 1.0;
+    dr_marker.color.g = 0.0;
+    dr_marker.color.b = 0.0;
 
 
 
+    mean_marker.header.frame_id = "/map";
+    mean_marker.header.stamp = ros::Time();
+    mean_marker.ns = "my_namespace";
+    mean_marker.id = 0;
+    mean_marker.type = visualization_msgs::Marker::CYLINDER;
 
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.pose.position.x = 0.3;
-    marker.pose.position.y = 0.3;
-    marker.pose.position.z = 0;
-    marker.pose.orientation.x = 0.0;
-    marker.pose.orientation.y = 0.0;
-    marker.pose.orientation.z = 0.0;
-    marker.pose.orientation.w = 1.0;
-    marker.scale.x = 0.1;
-    marker.scale.y = 0.1;
-    marker.scale.z = 0.1;
-    marker.color.a = 1.0; // Don't forget to set the alpha!
-    marker.color.r = 1.0;
-    marker.color.g = 0.0;
-    marker.color.b = 0.0;
+    mean_marker.action = visualization_msgs::Marker::ADD;
+    mean_marker.pose.position.x = INIT_X;
+    mean_marker.pose.position.y = INIT_Y;
+    mean_marker.pose.position.z = INIT_THETA;
+    mean_marker.pose.orientation.x = 0.0;
+    mean_marker.pose.orientation.y = 0.0;
+    mean_marker.pose.orientation.z = 0.0;
+    mean_marker.pose.orientation.w = 1.0;
+    mean_marker.scale.x = b_;
+    mean_marker.scale.y = b_;
+    mean_marker.scale.z = 0.1;
+    mean_marker.color.a = 1.0; // Don't forget to set the alpha!
+    mean_marker.color.r = 1.0;
+    mean_marker.color.g = 1.0;
+    mean_marker.color.b = 1.0;
+
+
 
     all_poses.poses.clear();
 
@@ -223,8 +234,8 @@ localization_node::localization_node()
 
         // all_particles_[i].x = MAX_X*((double)std::rand() / (double)RAND_MAX);
         // all_particles_[i].y = MAX_Y*((double)std::rand() / (double)RAND_MAX);
-        all_particles_[i].x = 1*((double)std::rand() / (double)RAND_MAX);
-        all_particles_[i].y = 0.3*((double)std::rand() / (double)RAND_MAX);
+        all_particles_[i].x = INIT_X*1.5*((double)std::rand() / (double)RAND_MAX);
+        all_particles_[i].y = INIT_Y*1.5*((double)std::rand() / (double)RAND_MAX);
 
         pose.position.x = all_particles_[i].x;
         pose.position.y = all_particles_[i].y;
@@ -235,7 +246,7 @@ localization_node::localization_node()
 
         }
 
-        yaw = M_PI*2*((double)std::rand() / (double)RAND_MAX);
+        yaw = M_PI/6*((double)std::rand() / (double)RAND_MAX);
 
         all_particles_[i].theta = yaw;
 
@@ -249,10 +260,51 @@ localization_node::localization_node()
 
 }
 
+double localization_node::moving_average(std::vector<double> &vector)
+{
+    double retval;
+
+    retval = (vector[0] + vector[1] + vector[2] + vector[3])/5.0;
+
+    return retval;
+
+}
 
 void localization_node::distCallback(const distance_publisher::IrDistance &dist)
 {
 
+    median_lf[0] = median_lf[1]; median_lf[1] = median_lf[2]; median_lf[2] = median_lf[3]; //Shift
+
+    median_lf[3] = dist.left_front_distance;
+
+    median_lb[0] = median_lb[1]; median_lb[1] = median_lb[2]; median_lb[2] = median_lb[3]; //Shift
+
+    median_lb[3] = dist.left_back_distance;
+
+    median_rf[0] = median_rf[1]; median_rf[1] = median_rf[2]; median_rf[2] = median_rf[3]; //Shift
+
+    median_rf[3] = dist.right_front_distance;
+
+    median_rb[0] = median_rb[1]; median_rb[1] = median_rb[2]; median_rb[2] = median_rb[3]; //Shift
+
+    median_rb[3] = dist.right_back_distance;
+
+    //    median_fr[0] = median_fr[1]; median_fr[1]=median_fr[2]; median_fr[2] = median_fr[3];
+
+    //    median_fr[3] = dist.front_right_distance;
+
+
+    calculated_distance_lf_ = moving_average(median_lf);
+    calculated_distance_lb_ = moving_average(median_lb);
+    calculated_distance_rf_ = moving_average(median_rf);
+    calculated_distance_rb_ = moving_average(median_rb);
+
+
+
+
+
+
+    /*
     calculated_distance_fl_= dist.front_left_distance;
 
     calculated_distance_fr_ = dist.front_right_distance;
@@ -265,13 +317,7 @@ void localization_node::distCallback(const distance_publisher::IrDistance &dist)
 
     calculated_distance_rb_ = dist.right_back_distance;
 
-    /*
-    std::cout<<calculated_distance_fl_<<std::endl;
-    std::cout<<calculated_distance_lf_<<std::endl;
-    std::cout<<calculated_distance_lb_<<std::endl;
-    std::cout<<calculated_distance_rf_<<std::endl;
-    std::cout<<calculated_distance_rb_<<std::endl;
-    */
+*/
 
 }
 
@@ -299,8 +345,8 @@ void localization_node::encoderCallback(const ras_arduino_msgs::Encoders encoder
 {
 
     //Delta Calculations
-    delta_sl_ = ((M_PI*d_)*encodermsg.delta_encoder1)/360.0; //Meters
-    delta_sr_ = ((M_PI*d_)*encodermsg.delta_encoder2)/360.0; //Meters
+    delta_sl_ = -((M_PI*d_)*encodermsg.delta_encoder1)/360.0; //Meters
+    delta_sr_ = -((M_PI*d_)*encodermsg.delta_encoder2)/360.0; //Meters
 
     delta_s_ = (delta_sl_+ delta_sr_)/2.0; //Meters
 
@@ -317,9 +363,9 @@ void localization_node::encoderCallback(const ras_arduino_msgs::Encoders encoder
 
     //Update
 
-    pose_.x = pose_.x + delta_x_; //Changed from 0.1
+    pose_.x = pose_.x + delta_x_;
 
-    pose_.y = pose_.y + delta_y_;
+    pose_.y = pose_.y + delta_y_; //Changing to minus because our encoders are fucked up
 
     pose_.theta = (pose_.theta + delta_theta_); //Radians
 
@@ -331,33 +377,40 @@ void localization_node::encoderCallback(const ras_arduino_msgs::Encoders encoder
 
     //Marker update
 
-    marker.pose.position.x = pose_.x;
-    marker.pose.position.y = pose_.y;
+    dr_marker.pose.position.x = pose_.x;
+    dr_marker.pose.position.y = pose_.y;
 
     mega_delta_x_ = mega_delta_x_+ delta_x_;
     mega_delta_y_ = mega_delta_y_+ delta_y_;
     mega_delta_theta_ = fmod(mega_delta_theta_+delta_theta_,2*M_PI);
 
+    double velocity = sqrt(mega_delta_x_*mega_delta_x_ + mega_delta_y_*mega_delta_y_);
+
     //Particle update
 
-    if(callback_counter>5)
+    if(callback_counter>5&&callback_counter%5==0)
     {
 
+        //std::cout<<"Resampling"<<std::endl;
         for(int i=0;i<=N_PARTICLES-1;i++)
         {
-            all_particles_[i].x = all_particles_[i].x + mega_delta_x_;
-            all_particles_[i].y = all_particles_[i].y + mega_delta_y_;
-            all_particles_[i].theta = fmod(all_particles_[i].theta + mega_delta_theta_,2*M_PI);
-
-
-            mega_delta_x_ = 0;
-            mega_delta_y_ = 0;
-            mega_delta_theta_ = 0;
-
-
+            all_particles_[i].x = all_particles_[i].x + velocity*cos(all_particles_[i].theta) + ((double)std::rand() / (double)RAND_MAX)/100.0;
+            all_particles_[i].y = all_particles_[i].y + velocity*sin(all_particles_[i].theta) + ((double)std::rand() / (double)RAND_MAX)/100.0;
+            all_particles_[i].theta = fmod(all_particles_[i].theta + mega_delta_theta_,2*M_PI) + ((double)std::rand() / (double)RAND_MAX)/100.0;// - ((double)std::rand() / (double)RAND_MAX)/10.0;;
 
 
         }
+        resample();
+
+        updateMean();
+
+
+        mega_delta_x_ = 0;
+        mega_delta_y_ = 0;
+        mega_delta_theta_ = 0;
+
+
+
     }
     callback_counter++;
 
@@ -394,6 +447,36 @@ void localization_node::normalize_weights()
 
 }
 
+
+double localization_node::rand_probability_long(double measurement)
+{
+    double z_max = 0.8;
+
+    if(measurement<z_max&&measurement>0)
+    {
+        return 1/z_max;
+    }
+    else
+    {
+        return 0.1;
+    }
+}
+
+
+double localization_node::rand_probability_short(double measurement)
+{
+    double z_max = 0.4;
+
+    if(measurement<z_max&&measurement>0)
+    {
+        return 1/z_max;
+    }
+    else
+    {
+        return 0.1;
+    }
+}
+
 double localization_node::calculate_weights()
 {
 
@@ -421,26 +504,26 @@ double localization_node::calculate_weights()
 
             double pred_distance_lf = getClosestWallDistanceLF(all_particles_[i].x,all_particles_[i].y,all_particles_[i].theta);
 
-            double prob_lf = measurement_probability(pred_distance_lf, calculated_distance_lf_, sensor_sigma_=1);
+            double prob_lf = measurement_probability(pred_distance_lf, calculated_distance_lf_, sensor_sigma_=1) * rand_probability_long(calculated_distance_lf_);
 
             double pred_distance_lb = getClosestWallDistanceLB(all_particles_[i].x,all_particles_[i].y,all_particles_[i].theta);
 
-            double prob_lb = measurement_probability(pred_distance_lb, calculated_distance_lb_, sensor_sigma_=1);
+            double prob_lb = measurement_probability(pred_distance_lb, calculated_distance_lb_, sensor_sigma_=1) * rand_probability_short(calculated_distance_lb_);
 
 
             double pred_distance_rf = getClosestWallDistanceRF(all_particles_[i].x,all_particles_[i].y,all_particles_[i].theta);
 
-            double prob_rf = measurement_probability(pred_distance_rf, calculated_distance_rf_, sensor_sigma_=1);
+            double prob_rf = measurement_probability(pred_distance_rf, calculated_distance_rf_, sensor_sigma_=1) * rand_probability_short(calculated_distance_rf_);
 
 
             double pred_distance_rb = getClosestWallDistanceRB(all_particles_[i].x,all_particles_[i].y,all_particles_[i].theta);
 
-            double prob_rb = measurement_probability(pred_distance_rb, calculated_distance_rb_, sensor_sigma_=1);
+            double prob_rb = measurement_probability(pred_distance_rb, calculated_distance_rb_, sensor_sigma_=1) * rand_probability_short(calculated_distance_rb_);
 
 
             double pred_distance_fl = getClosestWallDistanceFL(all_particles_[i].x,all_particles_[i].y,all_particles_[i].theta);
 
-            double prob_fl = measurement_probability(pred_distance_fl, calculated_distance_fl_, sensor_sigma_=1);
+            double prob_fl = measurement_probability(pred_distance_fl, calculated_distance_fl_, sensor_sigma_=1)*rand_probability_short(calculated_distance_fl_);
 
 
 
@@ -489,17 +572,61 @@ void localization_node::update_markers()
 
 }
 
+void localization_node::updateMean()
+{
+    double meanx = 0;
+    double meany = 0;
+    double weight_sum = 0;
+
+    double x = 0;
+    double y = 0;
+
+    variance_ = 0;
+
+    for (int i=0;i<=N_PARTICLES-1;i++)
+    {
+        meanx = meanx + weights_[i]*all_particles_[i].x;
+        meany = meany + weights_[i]*all_particles_[i].y;
+        weight_sum = weight_sum + weights_[i];
+
+        x = x + cos(all_particles_[i].theta);
+        y = y + sin(all_particles_[i].theta);
+
+
+
+
+
+    }
+
+    mean_angle_ = atan2(y,x);
+
+    //std::cout<<mean_angle_*180/M_PI<<std::endl;
+
+    //meanx = meanx/N_PARTICLES;
+    //meany = meany/N_PARTICLES;
+
+    meanx = meanx/weight_sum;
+    meany = meany/weight_sum;
+
+    /*
+    for (int i=0;i<=N_PARTICLES-1;i++)
+    {
+        variance_ += pow(all_particles_[i].x - meanx,2);
+    }
+*/
+
+
+    mean_marker.pose.position.x = meanx;
+    mean_marker.pose.position.y = meany;
+
+
+}
+
 void localization_node::resample()
 {
     /*
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    normalize_weights();
 
-
-    std::normal_distribution<> mini_gauss(0.25);
-    */
-
-    /*
     mypoint new_all_particles_[N_PARTICLES];
 
     int index = rand()%1000; //Random number from one to 1000
@@ -542,8 +669,10 @@ void localization_node::resample()
         all_particles_[i] = new_all_particles_[i];
     }
 
+
 */
 
+    /*
     //Working resampling
 
     mypoint new_all_particles_[N_PARTICLES];
@@ -551,6 +680,7 @@ void localization_node::resample()
     double sum = 0.0;
     double probabilities[N_PARTICLES];
     //Calculate normalizer
+
     for (int i=0;i<N_PARTICLES-1;i++)
     {
         sum+=weights_[i];
@@ -596,7 +726,9 @@ void localization_node::resample()
     }
 
 
-    /*
+*/
+
+
     //Systematic resampling
 
     int N  = N_PARTICLES;
@@ -618,7 +750,7 @@ void localization_node::resample()
     }
 
 
-    for (int i=0;i<N_PARTICLES-1;i++)
+    for (int i=0;i<=N_PARTICLES-1;i++)
     {
         sum+=weights_[i];
         cumsum[i] = sum;
@@ -627,7 +759,7 @@ void localization_node::resample()
 
     int i=0; int j=0;
 
-    while(i<N_PARTICLES-1)
+    while(i<=N_PARTICLES-1)
     {
         if(positions[i]<cumsum[j])
         {
@@ -636,7 +768,7 @@ void localization_node::resample()
         }
         else
         {
-           j+=1;
+            j+=1;
         }
 
     }
@@ -656,7 +788,6 @@ void localization_node::resample()
     //NOTE -to write normalizer
 
     normalize_weights();
-*/
 
 
 
@@ -773,13 +904,20 @@ double localization_node::getClosestWallDistanceFL(double x, double y, double th
         }
 
 
+        if(min>RANGE_FOR_LONG)
+        {
+            min = RANGE_FOR_LONG;
+        }
+
+
     }
 
-
+    /*
     if(min>0.8||min<=0.1)
     {
         min = 0.8;
     }
+*/
 
     return min;
 
@@ -796,29 +934,23 @@ double localization_node::getClosestWallDistanceLF(const double x,const double y
 
     double theta1 = theta + M_PI/2;
 
-   // double x1 = lftransform_.getOrigin().x();
-   // double y1 = lftransform_.getOrigin().y();
+    // double x1 = lftransform_.getOrigin().x();
+    // double y1 = lftransform_.getOrigin().y();
 
     double x1 = x + (x_offset_*cos(-theta) + y_offset_*sin(-theta));
     double y1 = y + (-x_offset_*sin(-theta)+ y_offset_*cos(-theta));
 
- //   std::cout<<"x:  "<<x<<"  x_offset_*cos(-theta) :"<< x_offset_*cos(-theta) <<"   y_offset_*sin(-theta):  "<<y_offset_*sin(-theta)<<"\r";
+    //   std::cout<<"x:  "<<x<<"  x_offset_*cos(-theta) :"<< x_offset_*cos(-theta) <<"   y_offset_*sin(-theta):  "<<y_offset_*sin(-theta)<<"\r";
 
-//    double x2 = x1 + 2*cos(theta1);
- //   double y2 = y1 + 2*sin(theta1);
+    //    double x2 = x1 + 2*cos(theta1);
+    //   double y2 = y1 + 2*sin(theta1);
 
 
 
     double x2 = x + (x_offset_*cos(-theta)+(y_offset_+0.8)*sin(-theta));
     double y2 = y + (-x_offset_*sin(-theta)+(y_offset_+0.8)*cos(-theta));
 
-//    std::cout<<"x2:  "<<x2<<"   y2:  "<<y2<<std::endl;
-
-    leftirx_ = x2;
-    leftiry_ = y2;
-
-    left_ir_marker.pose.position.x = leftirx_;
-    left_ir_marker.pose.position.y = leftiry_;
+    //    std::cout<<"x2:  "<<x2<<"   y2:  "<<y2<<std::endl;
 
     double left_dist;
 
@@ -842,18 +974,17 @@ double localization_node::getClosestWallDistanceLF(const double x,const double y
                 {
                     min=left_dist;
 
-                    ipt_x_l_ = contactx;
-                    ipt_y_l_ = contacty;
                 }
 
             }
         }
 
 
-        if(min>0.8||min<=0.1)
+        if(min>RANGE_FOR_LONG)
         {
-            min = 0.8;
+            min = RANGE_FOR_LONG;
         }
+
 
     }
 
@@ -885,22 +1016,8 @@ double localization_node::getClosestWallDistanceLB(const double x,const double y
     double y2 = y + (x_offset_*sin(-theta)+(y_offset_+0.8)*cos(-theta));
 
 
-
-
-
-
-
-
-
-
-//    double x2 = x1 + 2*cos(theta1);
-//   double y2 = y1 + 2*sin(theta1);
-
-    leftirx_ = x2;
-    leftiry_ = y2;
-
-    left_ir_marker.pose.position.x = leftirx_;
-    left_ir_marker.pose.position.y = leftiry_;
+    //    double x2 = x1 + 2*cos(theta1);
+    //   double y2 = y1 + 2*sin(theta1);
 
     double left_dist;
 
@@ -924,21 +1041,24 @@ double localization_node::getClosestWallDistanceLB(const double x,const double y
                 {
                     min=left_dist;
 
-                    ipt_x_l_ = contactx;
-                    ipt_y_l_ = contacty;
                 }
 
             }
         }
 
-        if(min>0.8||min<=0.1)
-        {
-            min = 0.8;
-        }
+
+
 
     }
 
+
+    if(min>RANGE_FOR_SHORT)
+    {
+        min = RANGE_FOR_SHORT;
+    }
+
     return min;
+
 }
 
 
@@ -962,8 +1082,8 @@ double localization_node::getClosestWallDistanceRF(double x, double y, double th
 
 
 
-//    double x1 = rftransform_.getOrigin().x();
- //   double y1 = rftransform_.getOrigin().y();
+    //    double x1 = rftransform_.getOrigin().x();
+    //   double y1 = rftransform_.getOrigin().y();
 
 
     double x1 = x + (x_offset_*cos(-theta) + -y_offset_*sin(-theta));
@@ -977,15 +1097,8 @@ double localization_node::getClosestWallDistanceRF(double x, double y, double th
 
 
 
-  //  double x2 = x1 + 2*cos(theta1);
-  //  double y2 = y1 + 2*sin(theta1);
-
-    rightirx_ = x2;
-    rightiry_ = y2;
-
-
-    right_ir_marker.pose.position.x = rightirx_;
-    right_ir_marker.pose.position.y = rightiry_;
+    //  double x2 = x1 + 2*cos(theta1);
+    //  double y2 = y1 + 2*sin(theta1);
 
     double right_dist;
 
@@ -1013,9 +1126,6 @@ double localization_node::getClosestWallDistanceRF(double x, double y, double th
                 {
                     min=right_dist;
 
-                    ipt_x_r_ = contactx;
-                    ipt_y_r_ = contacty;
-
 
                 }
             }
@@ -1023,22 +1133,15 @@ double localization_node::getClosestWallDistanceRF(double x, double y, double th
 
 
 
-        if(right_dist==0)
-        {
-            //return -1.0f;
-        }
-
-
     }
 
-
-    if(min>0.8||min<=0.1)
+    if(min>RANGE_FOR_SHORT)
     {
-        min = 0.8;
+        min = RANGE_FOR_SHORT;
     }
-
 
     return min;
+
 
 }
 
@@ -1072,17 +1175,6 @@ double localization_node::getClosestWallDistanceRB(double x, double y, double th
     double y2 = y + (x_offset_*sin(-theta)+(-y_offset_-0.8)*cos(-theta));
 
 
-
-    //double x2 = x1 + 2*cos(theta1);
-    //double y2 = y1 + 2*sin(theta1);
-
-    rightirx_ = x2;
-    rightiry_ = y2;
-
-
-    right_ir_marker.pose.position.x = rightirx_;
-    right_ir_marker.pose.position.y = rightiry_;
-
     double right_dist;
 
     int collision;
@@ -1102,15 +1194,12 @@ double localization_node::getClosestWallDistanceRB(double x, double y, double th
         {
             //std::cout<<"Distance: "<<right_dist<<std::endl;
 
-            if(right_dist>0.001)
+            if(right_dist>0.01)
             {
 
                 if(right_dist<min)
                 {
                     min=right_dist;
-
-                    ipt_x_r_ = contactx;
-                    ipt_y_r_ = contacty;
 
 
                 }
@@ -1119,19 +1208,14 @@ double localization_node::getClosestWallDistanceRB(double x, double y, double th
 
 
 
-        if(right_dist==0)
-        {
-            //return -1.0f;
-        }
-
-
     }
 
 
-    if(min>0.8||min<=0.1)
+    if(min>RANGE_FOR_SHORT)
     {
-        min = 0.8;
+        min = RANGE_FOR_SHORT;
     }
+
 
 
     return min;
@@ -1160,58 +1244,38 @@ int main(int argc, char **argv)
     {
         int counter=0;
 
-        l_node.pose_pub_.publish(l_node.all_poses);
+        l_node.dr_pub_.publish(l_node.all_poses);
 
-        double testx = l_node.currx;
-        double testy = l_node.curry;
-        double testtheta = l_node.currth;
+
+        double testx = l_node.mean_marker.pose.position.x;
+        double testy = l_node.mean_marker.pose.position.y;
+        double testtheta = l_node.mean_angle_;
+
+        double testx2 = l_node.pose_.x;
+        double testy2 = l_node.pose_.y;
+        double testtheta2 = l_node.pose_.theta;
 
 
         std::cout<<"Pose  "<<testx<<"\t"<<testy<<"\t"<<testtheta<<"\t"<<std::endl;
-        std::cout<<"Front Left: "<<l_node.getClosestWallDistanceFL(testx, testy, testtheta)<<"\t"<<l_node.calculated_distance_fl_<<"\n";
-        std::cout<<"Left Front: "<<l_node.getClosestWallDistanceLF(testx, testy, testtheta)<<"\t"<<l_node.calculated_distance_lf_<<"\n";
-        std::cout<<"Left Back: "<<l_node.getClosestWallDistanceLB(testx, testy, testtheta)<<"\t"<<l_node.calculated_distance_lb_<<"\n";
-        std::cout<<"Right Front: "<<l_node.getClosestWallDistanceRF(testx, testy, testtheta)<<"\t"<<l_node.calculated_distance_rf_<<"\n";
-        std::cout<<"Right Back: "<<l_node.getClosestWallDistanceRB(testx, testy, testtheta)<<"\t"<<l_node.calculated_distance_rb_<<"\n \n";
+        std::cout<<"Predicted(mean): \t"<<"Predicted(DR): \t"<<"Calculated: \t \n";
+        std::cout<<"Front Left: "<<l_node.getClosestWallDistanceFL(testx, testy, testtheta)<<"\t\t"<<l_node.getClosestWallDistanceFL(testx2, testy2, testtheta2)<<"\t\t"<<l_node.calculated_distance_fl_<<"\n";
+        std::cout<<"Left Front: "<<l_node.getClosestWallDistanceLF(testx, testy, testtheta)<<"\t"<<l_node.getClosestWallDistanceLF(testx2, testy2, testtheta2)<<"\t\t"<<l_node.calculated_distance_lf_<<"\n";
+        std::cout<<"Left Back: "<<l_node.getClosestWallDistanceLB(testx, testy, testtheta)<<"\t\t"<<l_node.getClosestWallDistanceLB(testx2, testy2, testtheta2)<<"\t\t"<<l_node.calculated_distance_lb_<<"\n";
+        std::cout<<"Right Front: "<<l_node.getClosestWallDistanceRF(testx, testy, testtheta)<<"\t"<<l_node.getClosestWallDistanceRF(testx2, testy2, testtheta2)<<"\t\t"<<l_node.calculated_distance_rf_<<"\n";
+        std::cout<<"Right Back: "<<l_node.getClosestWallDistanceRB(testx, testy, testtheta)<<"\t"<<l_node.getClosestWallDistanceRB(testx2, testy2, testtheta2)<<"\t\t"<<l_node.calculated_distance_rb_<<"\n \n";
+
 
 
         l_node.calculate_weights();
 
-        //l_node.normalize_weights();
+        l_node.normalize_weights();
 
         l_node.update_markers();
 
-        try
-        {
-            l_node.tflistener_lf_.lookupTransform("/map", "/distance_sensor_front_left_link",
-                                                  ros::Time(0), l_node.lftransform_);
-
-            l_node.tflistener_lb_.lookupTransform("/map", "/distance_sensor_back_left_link",
-                                                  ros::Time(0), l_node.lbtransform_);
-
-            l_node.tflistener_rf_.lookupTransform("/map", "/distance_sensor_front_right_link",
-                                                  ros::Time(0), l_node.rftransform_);
-
-            l_node.tflistener_rb_.lookupTransform("/map", "/distance_sensor_back_right_link",
-                                                  ros::Time(0), l_node.rbtransform_);
-
-            l_node.tflistener_fwl_.lookupTransform("/map", "/distance_sensor_forward_left_link",
-                                                   ros::Time(0), l_node.fwltransform_);
-
-            l_node.tflistener_fwr_.lookupTransform("/map", "/distance_sensor_forward_right_link",
-                                                   ros::Time(0), l_node.fwrtransform_);
 
 
-
-
-        }
-
-        catch (tf::TransformException &ex)
-        {
-            ROS_ERROR("%s",ex.what());
-            ros::Duration(1.0).sleep();
-            continue;
-        }
+        l_node.vis_pub_.publish(l_node.dr_marker);
+        l_node.mean_pub_.publish(l_node.mean_marker);
 
 
         ros::spinOnce();
