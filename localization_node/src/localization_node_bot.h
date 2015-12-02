@@ -23,22 +23,47 @@
 #include <nav_msgs/Odometry.h>
 #include <distance_publisher/IrDistance.h>
 #include "tf/transform_datatypes.h"
-#include<tf/transform_listener.h>
+#include <tf/transform_listener.h>
+#include <vector>
 //#include<tf/Quarternion.h>
 
 //#include <geometry_msgs/Quarternion.h>
 
-#define VEL_SPREAD 0.1
-#define ROT_SPREAD 0.1
+#define VEL_SPREAD 0.0
+#define ROT_SPREAD 0.0
 
-#define N_PARTICLES 10000
-#define MAX_X 3.7995
+#define WALL_THICKNESS 0.1
+#define K_RAND_X 0.05
+#define K_RAND_Y 0.05
+#define K_RAND_THETA 100
+
+#define N_PARTICLES 5000
+#define MAX_X 3.7995/1.5
 #define MIN_X 0.0
 
-#define MAX_Y 3.60
+#define MAX_Y 3.60/1.5
 #define MIN_Y 0.0
 
-#define MEDIAN_SAMPLES 3
+#define INIT_X  0.63
+#define INIT_Y  0.24
+#define INIT_THETA 0
+
+#define Z_HIT 0.9
+#define Z_RAND 0.1
+#define Z_SHORT 0
+#define Z_MAX 0
+
+#define RANGE_FOR_SHORT 0.4
+#define RANGE_FOR_LONG 0.8
+
+#define TEST_MAZE 0
+#define PRACTICE_MAZE 1
+
+#define RESAMPLE_K 5
+
+#define SAMPLING_WHEEL 1
+#define SAMPLING_EZ 0
+#define SAMPLING_SYSTEMATIC 0
 
 
 class localization_node
@@ -54,6 +79,10 @@ public:
     double calculated_distance_lb_;
     double calculated_distance_rf_;
     double calculated_distance_rb_;
+
+
+    double value_;
+    double alpha_;
 
 
     struct mypoint{
@@ -72,13 +101,12 @@ public:
 
     ros::Publisher localization_pub_;
 
-    ros::Publisher pose_pub_;
+    ros::Publisher dr_pub_;
+
+    ros::Publisher mean_pub_;
 
     ros::Publisher vis_pub_;
 
-    ros::Publisher right_ir_loc_pub_;
-
-    ros::Publisher left_ir_loc_pub_;
 
     ros::Subscriber encoder_sub_;
 
@@ -90,16 +118,22 @@ public:
 
     geometry_msgs::Pose2D pose_;
 
-    int i;
+    double mega_delta_x_;
+    double mega_delta_y_;
+    double mega_delta_theta_;
 
-    double ipt_x_l_;
+    double x_offset_; //Sensor offset from center of the robot
+    double y_offset_;
 
-    double ipt_y_l_;
+    double x_fw_offset_;
+    double y_fw_offset_;
 
-    double ipt_x_r_;
-
-    double ipt_y_r_;
-
+    std::vector<double> median_fl;
+    std::vector<double> median_fr;
+    std::vector<double> median_lf;
+    std::vector<double> median_lb;
+    std::vector<double> median_rf;
+    std::vector<double> median_rb;
     /*Pose variables*/
 
     /*Deltas*/
@@ -128,20 +162,16 @@ public:
 
     int callback_counter = 0;
 
+    double variance_;
+
 
     /*Marker variables*/
 
     /*TODO rename variables with trailing underscore(_) OR move to another node*/
 
+    visualization_msgs::Marker mean_marker;
 
-
-    visualization_msgs::Marker marker;
-
-    visualization_msgs::Marker int_marker;
-
-    visualization_msgs::Marker right_ir_marker;
-
-    visualization_msgs::Marker left_ir_marker;
+    visualization_msgs::Marker dr_marker;
 
     visualization_msgs::MarkerArray all_points;
 
@@ -152,12 +182,6 @@ public:
     double weights_[N_PARTICLES];
 
     double normalized_weights_[N_PARTICLES];
-
-    double rightirx_;
-    double rightiry_;
-
-    double leftirx_;
-    double leftiry_;
 
     struct segment{
 
@@ -194,12 +218,6 @@ public:
 
     double sensor_sigma_;
 
-    double x_offset_;
-    double y_offset_;
-
-    double x_fw_offset_;
-    double y_fw_offset_;
-
     mypoint all_particles_[N_PARTICLES];
 
     segment map_segments[15];
@@ -208,6 +226,8 @@ public:
 
     double velX_;
     double velTheta_;
+
+    double mean_angle_;
 
     localization_node();
 
@@ -238,6 +258,10 @@ public:
     int get_line_intersection(double p0_x, double p0_y, double p1_x, double p1_y,
         double p2_x, double p2_y, double p3_x, double p3_y, double *distance, double &intx, double &inty );
 
+    double rand_probability_long(double measurement);
+
+    double rand_probability_short(double measurement);
+
     double getClosestWallDistanceFL(double x, double y, double theta);
 
     double getClosestWallDistanceFR(double x, double y, double theta);
@@ -249,6 +273,12 @@ public:
     double getClosestWallDistanceRF(double x, double y, double theta);
 
     double getClosestWallDistanceRB(double x, double y, double theta);
+
+    double normalizer_p_hit(double &val, bool long_active=0);
+
+    double moving_average(std::vector<double>&);
+
+    void updateMean();
 
     void particle_filter();
 
