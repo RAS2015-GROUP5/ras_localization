@@ -28,15 +28,17 @@
 
 //#include <geometry_msgs/Quarternion.h>
 
-#define VEL_SPREAD 0.0
-#define ROT_SPREAD 0.0
+#define VEL_SPREAD 0.1
+#define ROT_SPREAD 0.1
 
-#define N_PARTICLES 1000
+#define N_PARTICLES 10000
 #define MAX_X 3.7995
 #define MIN_X 0.0
 
 #define MAX_Y 3.60
 #define MIN_Y 0.0
+
+#define MEDIAN_SAMPLES 3
 
 
 class localization_node
@@ -89,17 +91,6 @@ public:
     geometry_msgs::Pose2D pose_;
 
     int i;
-
-    double mega_delta_x_;
-    double mega_delta_y_;
-    double mega_delta_theta_;
-
-   double x_offset_; //Sensor offset from center of the robot
-   double y_offset_;
-
-   double x_fw_offset_;
-   double y_fw_offset_;
-
 
     double ipt_x_l_;
 
@@ -203,6 +194,12 @@ public:
 
     double sensor_sigma_;
 
+    double x_offset_;
+    double y_offset_;
+
+    double x_fw_offset_;
+    double y_fw_offset_;
+
     mypoint all_particles_[N_PARTICLES];
 
     segment map_segments[15];
@@ -264,4 +261,3 @@ public:
     void printParticles();
 
 };
-
