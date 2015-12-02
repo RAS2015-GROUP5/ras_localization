@@ -7,6 +7,9 @@ localization_node::localization_node()
 
     n_ = ros::NodeHandle("n");
 
+    if((Z_HIT+ Z_RAND + Z_SHORT + Z_MAX)==1){}
+    else{ std::cout<<"Z's not 1";}
+
 
     //Publishers
 
@@ -32,7 +35,7 @@ localization_node::localization_node()
 
     std::mt19937 gen(rd());
 
-    std::normal_distribution<> gauss(2,1.5);
+    std::normal_distribution<> gauss(INIT_X,0.3);
 
     std::normal_distribution<> mini_gauss(0.25);
 
@@ -80,50 +83,51 @@ localization_node::localization_node()
 
     //Dead Reckoning Section
 
-    /*
-    //Walls//
-    map_segments[0].x1 = 0;map_segments[0].y1=0; map_segments[0].x2=372;map_segments[0].y2=0; //Correct
-    map_segments[1].x1 = 0;map_segments[1].y1=66; map_segments[1].x2=0;map_segments[1].y2=366; //Correct
-    map_segments[2].x1 = 372;map_segments[2].y1=0; map_segments[2].x2=372;map_segments[2].y2=366; //Correct
-    map_segments[3].x1 = 0;map_segments[3].y1=366; map_segments[3].x2=372;map_segments[3].y2=366; //Correct
-
-    //Interior free walls//
-    map_segments[4].x1 = 54;map_segments[4].y1=249; map_segments[4].x2=118.5;map_segments[4].y2=249; //Correct
-    map_segments[5].x1 = 54;map_segments[5].y1=249; map_segments[5].x2=54;map_segments[5].y2=190.5; //Correct
-    map_segments[6].x1 = 118.5;map_segments[6].y1=249; map_segments[6].x2=118.5;map_segments[6].y2=190.5; //Correct
-
-
-    //Interior Walls//
-
-
-    map_segments[7].x1 = 0;map_segments[7].y1=66; map_segments[7].x2=300;map_segments[7].y2=66; //Correct
-    map_segments[8].x1 = 120;map_segments[8].y1=66; map_segments[8].x2=120;map_segments[8].y2=132; //Correct
-    map_segments[9].x1 = 240;map_segments[9].y1=44; map_segments[9].x2=240;map_segments[9].y2=315; //Correct
-    map_segments[10].x1 = 372;map_segments[10].y1=133.5; map_segments[10].x2=312;map_segments[10].y2=133.5; //Correct
-    map_segments[11].x1 = 372;map_segments[11].y1=265.5; map_segments[11].x2=312;map_segments[11].y2=265.5; //Correct
-    map_segments[12].x1 = 300;map_segments[12].y1=199.5; map_segments[12].x2=240;map_segments[12].y2=199.5; //Correct
-    map_segments[13].x1 = 180;map_segments[13].y1=195; map_segments[13].x2=240;map_segments[13].y2=195; //Correct
-    map_segments[14].x1 = 180;map_segments[14].y1=276; map_segments[14].x2=240;map_segments[14].y2=276; //Correct
-
-
-    for(int i=0;i<=14;i++) //For running on the real robot;
+    if(PRACTICE_MAZE == 1)
     {
-        map_segments[i].x1 = map_segments[i].x1/1.50;
-        map_segments[i].y1 = map_segments[i].y1/1.50;
-        map_segments[i].x2 = map_segments[i].x2/1.50;
-        map_segments[i].y2 = map_segments[i].y2/1.50;
+        //Walls//
+        map_segments[0].x1 = 0;map_segments[0].y1=0; map_segments[0].x2=372;map_segments[0].y2=0; //Correct
+        map_segments[1].x1 = 0;map_segments[1].y1=66; map_segments[1].x2=0;map_segments[1].y2=366; //Correct
+        map_segments[2].x1 = 372;map_segments[2].y1=0; map_segments[2].x2=372;map_segments[2].y2=366; //Correct
+        map_segments[3].x1 = 0;map_segments[3].y1=366; map_segments[3].x2=372;map_segments[3].y2=366; //Correct
+
+        //Interior free walls//
+        map_segments[4].x1 = 54;map_segments[4].y1=249; map_segments[4].x2=118.5;map_segments[4].y2=249; //Correct
+        map_segments[5].x1 = 54;map_segments[5].y1=249; map_segments[5].x2=54;map_segments[5].y2=190.5; //Correct
+        map_segments[6].x1 = 118.5;map_segments[6].y1=249; map_segments[6].x2=118.5;map_segments[6].y2=190.5; //Correct
+
+
+        //Interior Walls//
+
+
+        map_segments[7].x1 = 0;map_segments[7].y1=66; map_segments[7].x2=300;map_segments[7].y2=66; //Correct
+        map_segments[8].x1 = 120;map_segments[8].y1=66; map_segments[8].x2=120;map_segments[8].y2=132; //Correct
+        map_segments[9].x1 = 240;map_segments[9].y1=44; map_segments[9].x2=240;map_segments[9].y2=315; //Correct
+        map_segments[10].x1 = 372;map_segments[10].y1=133.5; map_segments[10].x2=312;map_segments[10].y2=133.5; //Correct
+        map_segments[11].x1 = 372;map_segments[11].y1=265.5; map_segments[11].x2=312;map_segments[11].y2=265.5; //Correct
+        map_segments[12].x1 = 300;map_segments[12].y1=199.5; map_segments[12].x2=240;map_segments[12].y2=199.5; //Correct
+        map_segments[13].x1 = 180;map_segments[13].y1=195; map_segments[13].x2=240;map_segments[13].y2=195; //Correct
+        map_segments[14].x1 = 180;map_segments[14].y1=276; map_segments[14].x2=240;map_segments[14].y2=276; //Correct
+
+
+        for(int i=0;i<=14;i++) //For running on the real robot;
+        {
+            map_segments[i].x1 = map_segments[i].x1/1.50;
+            map_segments[i].y1 = map_segments[i].y1/1.50;
+            map_segments[i].x2 = map_segments[i].x2/1.50;
+            map_segments[i].y2 = map_segments[i].y2/1.50;
+        }
+
+
+        for(int i=0;i<=14;i++) //I Messed up the map coordinates, converting to m;
+        {
+            map_segments[i].x1 = map_segments[i].x1/100.0; //metres
+            map_segments[i].y1 = map_segments[i].y1/100.0; //metres
+            map_segments[i].x2 = map_segments[i].x2/100.0; //metres
+            map_segments[i].y2 = map_segments[i].y2/100.0; //metres
+        }
+
     }
-
-
-    for(int i=0;i<=14;i++) //I Messed up the map coordinates, converting to m;
-    {
-        map_segments[i].x1 = map_segments[i].x1/100.0; //metres
-        map_segments[i].y1 = map_segments[i].y1/100.0; //metres
-        map_segments[i].x2 = map_segments[i].x2/100.0; //metres
-        map_segments[i].y2 = map_segments[i].y2/100.0; //metres
-    }
-
-*/
 
     //Test maze walls
 
@@ -234,8 +238,8 @@ localization_node::localization_node()
 
         // all_particles_[i].x = MAX_X*((double)std::rand() / (double)RAND_MAX);
         // all_particles_[i].y = MAX_Y*((double)std::rand() / (double)RAND_MAX);
-        all_particles_[i].x = INIT_X*1.5*((double)std::rand() / (double)RAND_MAX);
-        all_particles_[i].y = INIT_Y*1.5*((double)std::rand() / (double)RAND_MAX);
+        all_particles_[i].x = INIT_X;
+        all_particles_[i].y = INIT_Y;
 
         pose.position.x = all_particles_[i].x;
         pose.position.y = all_particles_[i].y;
@@ -246,7 +250,7 @@ localization_node::localization_node()
 
         }
 
-        yaw = M_PI/6*((double)std::rand() / (double)RAND_MAX);
+        yaw = - M_PI/4 + M_PI/3*((double)std::rand() / (double)RAND_MAX);
 
         all_particles_[i].theta = yaw;
 
@@ -289,15 +293,22 @@ void localization_node::distCallback(const distance_publisher::IrDistance &dist)
 
     median_rb[3] = dist.right_back_distance;
 
-    //    median_fr[0] = median_fr[1]; median_fr[1]=median_fr[2]; median_fr[2] = median_fr[3];
+    median_fr[0] = median_fr[1]; median_fr[1]=median_fr[2]; median_fr[2] = median_fr[3];
 
-    //    median_fr[3] = dist.front_right_distance;
+    median_fr[3] = dist.front_right_distance;
+
+    median_fl[0] = median_fl[1]; median_fl[1]=median_fl[2]; median_fl[2] = median_fl[3];
+
+    median_fl[3] = dist.front_left_distance;
 
 
+    calculated_distance_fl_=moving_average(median_fl);
+    calculated_distance_fr_=moving_average(median_fr);
     calculated_distance_lf_ = moving_average(median_lf);
     calculated_distance_lb_ = moving_average(median_lb);
     calculated_distance_rf_ = moving_average(median_rf);
     calculated_distance_rb_ = moving_average(median_rb);
+
 
 
 
@@ -341,8 +352,48 @@ double localization_node::measurement_probability(const double measured_distance
 }
 
 
+double localization_node::normalizer_p_hit(double &val, bool long_active)
+{
+    double normalizer = 0.0;
+    double sum=0.0;
+    double range=0;
+
+    double tempsigma = 1.0;
+
+    double max_range;
+
+    if(long_active)
+    {
+        max_range = RANGE_FOR_LONG;
+    }
+
+    else
+    {
+        max_range = RANGE_FOR_SHORT;
+    }
+
+
+    for(int i=0;range<=max_range;i++)
+    {
+        normalizer = normalizer + measurement_probability(val,i,tempsigma);
+        range = range + 0.02;
+    }
+
+    normalizer = 1/normalizer;
+
+    return normalizer;
+
+}
+
+
 void localization_node::encoderCallback(const ras_arduino_msgs::Encoders encodermsg)
 {
+
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::normal_distribution<> mini_gauss2(0.005,0.01);
 
     //Delta Calculations
     delta_sl_ = -((M_PI*d_)*encodermsg.delta_encoder1)/360.0; //Meters
@@ -388,15 +439,15 @@ void localization_node::encoderCallback(const ras_arduino_msgs::Encoders encoder
 
     //Particle update
 
-    if(callback_counter>5&&callback_counter%5==0)
+    if(callback_counter>5&&callback_counter%RESAMPLE_K==0)
     {
 
         //std::cout<<"Resampling"<<std::endl;
         for(int i=0;i<=N_PARTICLES-1;i++)
         {
-            all_particles_[i].x = all_particles_[i].x + velocity*cos(all_particles_[i].theta) + ((double)std::rand() / (double)RAND_MAX)/100.0;
-            all_particles_[i].y = all_particles_[i].y + velocity*sin(all_particles_[i].theta) + ((double)std::rand() / (double)RAND_MAX)/100.0;
-            all_particles_[i].theta = fmod(all_particles_[i].theta + mega_delta_theta_,2*M_PI) + ((double)std::rand() / (double)RAND_MAX)/100.0;// - ((double)std::rand() / (double)RAND_MAX)/10.0;;
+            all_particles_[i].x = all_particles_[i].x + velocity*cos(all_particles_[i].theta) + mini_gauss2(gen);// K_RAND_X*((double)std::rand() / (double)RAND_MAX); //- ((double)std::rand() / (double)RAND_MAX)/K_RAND_X;
+            all_particles_[i].y = all_particles_[i].y + velocity*sin(all_particles_[i].theta) + mini_gauss2(gen);//K_RAND_Y*((double)std::rand() / (double)RAND_MAX);// - ((double)std::rand() / (double)RAND_MAX)/K_RAND_Y;
+            all_particles_[i].theta = fmod(all_particles_[i].theta + mega_delta_theta_,2*M_PI) + ((double)std::rand() / (double)RAND_MAX)/K_RAND_THETA; //- ((double)std::rand() / (double)RAND_MAX)/K_RAND_THETA;
 
 
         }
@@ -418,6 +469,8 @@ void localization_node::encoderCallback(const ras_arduino_msgs::Encoders encoder
 
 void localization_node::normalize_weights()
 {
+
+
     double sum_weights = 0;
     double tempsum = 0;
 
@@ -444,7 +497,6 @@ void localization_node::normalize_weights()
 
 
 
-
 }
 
 
@@ -458,7 +510,7 @@ double localization_node::rand_probability_long(double measurement)
     }
     else
     {
-        return 0.1;
+        return 0.001;
     }
 }
 
@@ -473,30 +525,32 @@ double localization_node::rand_probability_short(double measurement)
     }
     else
     {
-        return 0.1;
+        return 0.001;
     }
 }
 
 double localization_node::calculate_weights()
 {
 
+    bool long_active = true;
+
     for(int i=0;i<=N_PARTICLES-1;i++)
     {
         if(all_particles_[i].x>MAX_X||all_particles_[i].x<MIN_X)
         {
-            //all_particles_[i].x = MAX_X*((double)std::rand() / (double)RAND_MAX);
+            all_particles_[i].x = pose_.x;
             weights_[i]=0;
-            // all_particles_[i].x = MAX_X;
+            all_particles_[i].y = pose_.y;
             // std::cout<<"Deleting particle"<<std::endl;
         }
 
 
         if(all_particles_[i].y>MAX_Y||all_particles_[i].y<MIN_Y)
         {
-            // all_particles_[i].y = MAX_Y*((double)std::rand() / (double)RAND_MAX);
+            all_particles_[i].x = pose_.x;
             weights_[i]=0;
+            all_particles_[i].y = pose_.y;
 
-            //  std::cout<<"Deleting particle"<<std::endl;
         }
 
         else
@@ -504,31 +558,36 @@ double localization_node::calculate_weights()
 
             double pred_distance_lf = getClosestWallDistanceLF(all_particles_[i].x,all_particles_[i].y,all_particles_[i].theta);
 
-            double prob_lf = measurement_probability(pred_distance_lf, calculated_distance_lf_, sensor_sigma_=1) * rand_probability_long(calculated_distance_lf_);
+            double prob_lf = Z_HIT * normalizer_p_hit(calculated_distance_lf_)*measurement_probability(pred_distance_lf, calculated_distance_lf_, sensor_sigma_=1) + Z_RAND*rand_probability_long(calculated_distance_lf_);
 
             double pred_distance_lb = getClosestWallDistanceLB(all_particles_[i].x,all_particles_[i].y,all_particles_[i].theta);
 
-            double prob_lb = measurement_probability(pred_distance_lb, calculated_distance_lb_, sensor_sigma_=1) * rand_probability_short(calculated_distance_lb_);
+            double prob_lb = Z_HIT * normalizer_p_hit(calculated_distance_lb_)*measurement_probability(pred_distance_lb, calculated_distance_lb_, sensor_sigma_=1) + Z_RAND * rand_probability_short(calculated_distance_lb_);
 
 
             double pred_distance_rf = getClosestWallDistanceRF(all_particles_[i].x,all_particles_[i].y,all_particles_[i].theta);
 
-            double prob_rf = measurement_probability(pred_distance_rf, calculated_distance_rf_, sensor_sigma_=1) * rand_probability_short(calculated_distance_rf_);
+            double prob_rf = Z_HIT*normalizer_p_hit(calculated_distance_rf_)*measurement_probability(pred_distance_rf, calculated_distance_rf_, sensor_sigma_=1) + Z_RAND * rand_probability_short(calculated_distance_rf_);
 
 
             double pred_distance_rb = getClosestWallDistanceRB(all_particles_[i].x,all_particles_[i].y,all_particles_[i].theta);
 
-            double prob_rb = measurement_probability(pred_distance_rb, calculated_distance_rb_, sensor_sigma_=1) * rand_probability_short(calculated_distance_rb_);
+            double prob_rb = Z_HIT*normalizer_p_hit(calculated_distance_rb_)* measurement_probability(pred_distance_rb, calculated_distance_rb_, sensor_sigma_=1) + Z_RAND *  rand_probability_short(calculated_distance_rb_);
 
 
             double pred_distance_fl = getClosestWallDistanceFL(all_particles_[i].x,all_particles_[i].y,all_particles_[i].theta);
 
-            double prob_fl = measurement_probability(pred_distance_fl, calculated_distance_fl_, sensor_sigma_=1)*rand_probability_short(calculated_distance_fl_);
+            double prob_fl = Z_HIT*normalizer_p_hit(calculated_distance_fl_,long_active)*measurement_probability(pred_distance_fl, calculated_distance_fl_, sensor_sigma_=1)+Z_RAND*rand_probability_short(calculated_distance_fl_);
+
+
+            double pred_distance_fr = getClosestWallDistanceFR(all_particles_[i].x,all_particles_[i].y,all_particles_[i].theta);
+
+            double prob_fr = Z_HIT*normalizer_p_hit(calculated_distance_fr_,long_active)*measurement_probability(pred_distance_fr,calculated_distance_fr_,sensor_sigma_=1) + Z_RAND* rand_probability_long(calculated_distance_fr_);
 
 
 
 
-            weights_[i] = prob_lf*prob_lb*prob_rf*prob_rb*prob_fl;
+            weights_[i] = prob_lf*prob_lb*prob_rf*prob_rb*prob_fl*prob_fr;
 
         }
         if(isnan(weights_[i]))
@@ -624,171 +683,174 @@ void localization_node::updateMean()
 
 void localization_node::resample()
 {
-    /*
-    normalize_weights();
 
-    mypoint new_all_particles_[N_PARTICLES];
-
-    int index = rand()%1000; //Random number from one to 1000
-
-    double beta = 0;
-
-    double max = 0;
-
-    for (int i=0;i<=N_PARTICLES-1;i++)
+    if(SAMPLING_WHEEL)
     {
-        if(weights_[i]>max)
+        normalize_weights();
+
+        mypoint new_all_particles_[N_PARTICLES];
+
+        int index = rand()%1000; //Random number from one to 1000
+
+        double beta = 0;
+
+        double max = 0;
+
+        for (int i=0;i<=N_PARTICLES-1;i++)
         {
-            max=weights_[i];
-        }
-
-    }
-
-
-    for (int i=0;i<=N_PARTICLES-1;i++)
-    {
-
-        double rand_val = (rand()%100)/1000.0;
-
-        beta = beta + rand_val*2.0*max ;
-
-        while (beta > weights_[index])
-        {
-            beta = beta - weights_[index];
-            index = (index + 1)%1000 ;
-        }
-
-        new_all_particles_[i] = all_particles_[index];
-        //std::cout<<"Choosing particle at "<<all_particles_[index].x<<"  "<<all_particles_[index].y<<"  "<<all_particles_[index].theta<<"\n";
-
-    }
-
-
-    for(int i=0;i<=N_PARTICLES-1;i++)
-    {
-        all_particles_[i] = new_all_particles_[i];
-    }
-
-
-*/
-
-    /*
-    //Working resampling
-
-    mypoint new_all_particles_[N_PARTICLES];
-
-    double sum = 0.0;
-    double probabilities[N_PARTICLES];
-    //Calculate normalizer
-
-    for (int i=0;i<N_PARTICLES-1;i++)
-    {
-        sum+=weights_[i];
-    }
-
-    double cumsum = 0.0;
-
-    for (int i=0;i<N_PARTICLES-1;i++)
-    {
-        cumsum += weights_[i]/sum;
-        probabilities[i] = cumsum;
-    }
-
-
-
-
-    for (int i=0;i<=N_PARTICLES-1;i++)
-    {
-        double temp = (double)std::rand() / (double)RAND_MAX;
-
-        for (int pos=0;pos<N_PARTICLES-1;pos++)
-        {
-
-            if(temp<probabilities[pos])
-
+            if(weights_[i]>max)
             {
-                new_all_particles_[i] = all_particles_[pos];
+                max=weights_[i];
+            }
 
-                //new_all_particles_[i].x = new_all_particles_[i].x + mini_gauss(gen);
-                //new_all_particles_[i].y = new_all_particles_[i].y + 0.1*(double)std::rand() / (double)RAND_MAX;
-                //new_all_particles_[i].theta = fmod(new_all_particles_[i].theta + mini_gauss(gen)*(double)std::rand() / (double)RAND_MAX, 2*M_PI);
+        }
 
 
-                break;
+        for (int i=0;i<=N_PARTICLES-1;i++)
+        {
+
+            double rand_val = (rand()%100)/1000.0;
+
+            beta = beta + rand_val*2.0*max ;
+
+            while (beta > weights_[index])
+            {
+                beta = beta - weights_[index];
+                index = (index + 1)%1000 ;
+            }
+
+            new_all_particles_[i] = all_particles_[index];
+            //std::cout<<"Choosing particle at "<<all_particles_[index].x<<"  "<<all_particles_[index].y<<"  "<<all_particles_[index].theta<<"\n";
+
+        }
+
+
+        for(int i=0;i<=N_PARTICLES-1;i++)
+        {
+            all_particles_[i] = new_all_particles_[i];
+        }
+    }
+
+
+
+
+    //Working resampling
+    if(SAMPLING_EZ)
+    {
+        mypoint new_all_particles_[N_PARTICLES];
+
+        double sum = 0.0;
+        double probabilities[N_PARTICLES];
+        //Calculate normalizer
+
+        for (int i=0;i<N_PARTICLES-1;i++)
+        {
+            sum+=weights_[i];
+        }
+
+        double cumsum = 0.0;
+
+        for (int i=0;i<N_PARTICLES-1;i++)
+        {
+            cumsum += weights_[i]/sum;
+            probabilities[i] = cumsum;
+        }
+
+
+
+
+        for (int i=0;i<=N_PARTICLES-1;i++)
+        {
+            double temp = (double)std::rand() / (double)RAND_MAX;
+
+            for (int pos=0;pos<N_PARTICLES-1;pos++)
+            {
+
+                if(temp<probabilities[pos])
+
+                {
+                    new_all_particles_[i] = all_particles_[pos];
+
+                    //new_all_particles_[i].x = new_all_particles_[i].x + mini_gauss(gen);
+                    //new_all_particles_[i].y = new_all_particles_[i].y + 0.1*(double)std::rand() / (double)RAND_MAX;
+                    //new_all_particles_[i].theta = fmod(new_all_particles_[i].theta + mini_gauss(gen)*(double)std::rand() / (double)RAND_MAX, 2*M_PI);
+
+
+                    break;
+                }
             }
         }
-    }
 
 
-    for(int i=0;i<=N_PARTICLES-1;i++)
-    {
-        all_particles_[i] = new_all_particles_[i];
-    }
-
-
-*/
-
-
-    //Systematic resampling
-
-    int N  = N_PARTICLES;
-
-    std::array<double,N_PARTICLES> positions;
-
-    std::array<double,N_PARTICLES> indexes;
-
-    std::array<double, N_PARTICLES> cumsum;
-
-    mypoint new_all_particles_[N_PARTICLES];
-
-    double sum = 0;
-
-    for(int i=0; i<=N_PARTICLES-1;i++)
-    {
-        positions[i] = (i + (double)std::rand() / (double)RAND_MAX)/N;
-        indexes[i] = 0;
-    }
-
-
-    for (int i=0;i<=N_PARTICLES-1;i++)
-    {
-        sum+=weights_[i];
-        cumsum[i] = sum;
-
-    }
-
-    int i=0; int j=0;
-
-    while(i<=N_PARTICLES-1)
-    {
-        if(positions[i]<cumsum[j])
+        for(int i=0;i<=N_PARTICLES-1;i++)
         {
-            indexes[i] = j;
-            i+= 1;
-        }
-        else
-        {
-            j+=1;
+            all_particles_[i] = new_all_particles_[i];
         }
 
     }
 
-
-    for(int i=0;i<=N_PARTICLES-1;i++)
+    if(SAMPLING_SYSTEMATIC)
     {
-        int ind = indexes[i];
-        new_all_particles_[i] = all_particles_[ind];
-        all_particles_[i] = new_all_particles_[i]; //Replace ith particle
+        //Systematic resampling
 
-        weights_[i] = weights_[ind];
+        int N  = N_PARTICLES;
+
+        std::array<double,N_PARTICLES> positions;
+
+        std::array<double,N_PARTICLES> indexes;
+
+        std::array<double, N_PARTICLES> cumsum;
+
+        mypoint new_all_particles_[N_PARTICLES];
+
+        double sum = 0;
+
+        for(int i=0; i<=N_PARTICLES-1;i++)
+        {
+            positions[i] = (i + (double)std::rand() / (double)RAND_MAX)/N;
+            indexes[i] = 0;
+        }
 
 
+        for (int i=0;i<=N_PARTICLES-1;i++)
+        {
+            sum+=weights_[i];
+            cumsum[i] = sum;
+
+        }
+
+        int i=0; int j=0;
+
+        while(i<=N_PARTICLES-1)
+        {
+            if(positions[i]<cumsum[j])
+            {
+                indexes[i] = j;
+                i+= 1;
+            }
+            else
+            {
+                j+=1;
+            }
+
+        }
+
+
+        for(int i=0;i<=N_PARTICLES-1;i++)
+        {
+            int ind = indexes[i];
+            new_all_particles_[i] = all_particles_[ind];
+            all_particles_[i] = new_all_particles_[i]; //Replace ith particle
+
+            weights_[i] = weights_[ind];
+
+
+        }
+
+        //NOTE -to write normalizer
+
+        normalize_weights();
     }
-
-    //NOTE -to write normalizer
-
-    normalize_weights();
-
 
 
 
@@ -839,7 +901,7 @@ int localization_node::get_line_intersection(double p0_x, double p0_y, double p1
     return 1;
 }
 
-double localization_node::getClosestWallDistanceFL(double x, double y, double theta)
+double localization_node::getClosestWallDistanceFR(double x, double y, double theta)
 {
 
     double min = 999;
@@ -851,25 +913,13 @@ double localization_node::getClosestWallDistanceFL(double x, double y, double th
 
     double theta1 = theta;
 
-    double x1 = x + (x_fw_offset_*cos(-theta) + y_fw_offset_*sin(-theta));
-    double y1 = y + (-x_fw_offset_*sin(-theta)+ y_fw_offset_*cos(-theta));
+    double x1 = x + (x_fw_offset_*cos(-theta) - y_fw_offset_*sin(-theta));
+    double y1 = y + (-x_fw_offset_*sin(-theta)- y_fw_offset_*cos(-theta));
 
-    double x2 = x + ((x_fw_offset_+0.8)*cos(-theta)+(y_fw_offset_)*sin(-theta));
-    double y2 = y + ((-x_fw_offset_+0.8)*sin(-theta)+(y_fw_offset_)*cos(-theta));
-
-
+    double x2 = x + ((x_fw_offset_+0.8)*cos(-theta)-(y_fw_offset_)*sin(-theta));
+    double y2 = y + ((-x_fw_offset_+0.8)*sin(-theta)-(y_fw_offset_)*cos(-theta));
 
 
-
-
-    //double x1 = fwltransform_.getOrigin().x();
-    //double y1 = fwltransform_.getOrigin().y();
-
-
-
-
-    //double x2 = x1 + 2.0*cos(theta1);
-    //double y2 = y1 + 2.0*sin(theta1);
 
     double front_dist;
 
@@ -919,7 +969,80 @@ double localization_node::getClosestWallDistanceFL(double x, double y, double th
     }
 */
 
-    return min;
+    return min + WALL_THICKNESS;
+
+}
+
+
+double localization_node::getClosestWallDistanceFL(double x, double y, double theta)
+{
+
+    double min = 999;
+    double new_min = 0;
+
+    double contactx;
+    double contacty;
+
+
+    double theta1 = theta;
+
+    double x1 = x + (x_fw_offset_*cos(-theta) + y_fw_offset_*sin(-theta));
+    double y1 = y + (-x_fw_offset_*sin(-theta)+ y_fw_offset_*cos(-theta));
+
+    double x2 = x + ((x_fw_offset_+0.8)*cos(-theta)+(y_fw_offset_)*sin(-theta));
+    double y2 = y + ((-x_fw_offset_+0.8)*sin(-theta)+(y_fw_offset_)*cos(-theta));
+
+
+
+    double front_dist;
+
+    int collision;
+
+    for(int i=0;i<=14;i++)
+    {
+        collision = get_line_intersection(x1,y1,x2,y2,map_segments[i].x1, map_segments[i].y1, map_segments[i].x2, map_segments[i].x2, &front_dist, contactx, contacty);
+
+
+        if(front_dist>0.8)
+        {
+            front_dist = 0.8;
+        }
+
+        if(collision)
+        {
+            if(front_dist<min)
+            {
+                if(front_dist>0.001)
+                {
+                    min=front_dist;
+
+                }
+
+            }
+        }
+
+        if(front_dist==0)
+        {
+            //return -1.0f;
+        }
+
+
+        if(min>RANGE_FOR_LONG)
+        {
+            min = RANGE_FOR_LONG;
+        }
+
+
+    }
+
+    /*
+    if(min>0.8||min<=0.1)
+    {
+        min = 0.8;
+    }
+*/
+
+    return min + WALL_THICKNESS;
 
 }
 
@@ -980,16 +1103,16 @@ double localization_node::getClosestWallDistanceLF(const double x,const double y
         }
 
 
-        if(min>RANGE_FOR_LONG)
+        if(min>RANGE_FOR_SHORT)
         {
-            min = RANGE_FOR_LONG;
+            min = RANGE_FOR_SHORT;
         }
 
 
     }
 
 
-    return min;
+    return min+ WALL_THICKNESS;
 
 }
 
@@ -1057,7 +1180,7 @@ double localization_node::getClosestWallDistanceLB(const double x,const double y
         min = RANGE_FOR_SHORT;
     }
 
-    return min;
+    return min+ WALL_THICKNESS;
 
 }
 
@@ -1140,7 +1263,7 @@ double localization_node::getClosestWallDistanceRF(double x, double y, double th
         min = RANGE_FOR_SHORT;
     }
 
-    return min;
+    return min+ WALL_THICKNESS;
 
 
 }
@@ -1218,7 +1341,7 @@ double localization_node::getClosestWallDistanceRB(double x, double y, double th
 
 
 
-    return min;
+    return min+ WALL_THICKNESS;
 
 }
 
@@ -1259,6 +1382,7 @@ int main(int argc, char **argv)
         std::cout<<"Pose  "<<testx<<"\t"<<testy<<"\t"<<testtheta<<"\t"<<std::endl;
         std::cout<<"Predicted(mean): \t"<<"Predicted(DR): \t"<<"Calculated: \t \n";
         std::cout<<"Front Left: "<<l_node.getClosestWallDistanceFL(testx, testy, testtheta)<<"\t\t"<<l_node.getClosestWallDistanceFL(testx2, testy2, testtheta2)<<"\t\t"<<l_node.calculated_distance_fl_<<"\n";
+        std::cout<<"Front Right: "<<l_node.getClosestWallDistanceFR(testx, testy, testtheta)<<"\t\t"<<l_node.getClosestWallDistanceFR(testx2, testy2, testtheta2)<<"\t\t"<<l_node.calculated_distance_fr_<<"\n";
         std::cout<<"Left Front: "<<l_node.getClosestWallDistanceLF(testx, testy, testtheta)<<"\t"<<l_node.getClosestWallDistanceLF(testx2, testy2, testtheta2)<<"\t\t"<<l_node.calculated_distance_lf_<<"\n";
         std::cout<<"Left Back: "<<l_node.getClosestWallDistanceLB(testx, testy, testtheta)<<"\t\t"<<l_node.getClosestWallDistanceLB(testx2, testy2, testtheta2)<<"\t\t"<<l_node.calculated_distance_lb_<<"\n";
         std::cout<<"Right Front: "<<l_node.getClosestWallDistanceRF(testx, testy, testtheta)<<"\t"<<l_node.getClosestWallDistanceRF(testx2, testy2, testtheta2)<<"\t\t"<<l_node.calculated_distance_rf_<<"\n";
