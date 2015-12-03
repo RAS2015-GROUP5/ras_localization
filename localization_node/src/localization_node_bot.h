@@ -32,24 +32,24 @@
 #define VEL_SPREAD 0.0
 #define ROT_SPREAD 0.0
 
-#define WALL_THICKNESS 0.1
+#define WALL_THICKNESS 0
 #define K_RAND_X 0.05
 #define K_RAND_Y 0.05
 #define K_RAND_THETA 100
 
-#define N_PARTICLES 5000
+#define N_PARTICLES 1000
 #define MAX_X 3.7995/1.5
 #define MIN_X 0.0
 
 #define MAX_Y 3.60/1.5
 #define MIN_Y 0.0
 
-#define INIT_X  0.63
-#define INIT_Y  0.24
+#define INIT_X  0.6
+#define INIT_Y  0.23
 #define INIT_THETA 0
 
-#define Z_HIT 0.9
-#define Z_RAND 0.1
+#define Z_HIT 1.0
+#define Z_RAND 0
 #define Z_SHORT 0
 #define Z_MAX 0
 
@@ -59,11 +59,17 @@
 #define TEST_MAZE 0
 #define PRACTICE_MAZE 1
 
-#define RESAMPLE_K 5
+#define RESAMPLE_K 10
 
 #define SAMPLING_WHEEL 1
 #define SAMPLING_EZ 0
 #define SAMPLING_SYSTEMATIC 0
+
+#define SENSOR_SIGMA 0.1
+
+#define TEST_K 3
+
+
 
 
 class localization_node
@@ -80,9 +86,9 @@ public:
     double calculated_distance_rf_;
     double calculated_distance_rb_;
 
+    double observations_[6];
 
-    double value_;
-    double alpha_;
+    double sensor_locations_[6][2];
 
 
     struct mypoint{
@@ -100,6 +106,8 @@ public:
     ros::NodeHandle n_;
 
     ros::Publisher localization_pub_;
+
+    ros::Publisher laser_pub_;
 
     ros::Publisher dr_pub_;
 
@@ -193,30 +201,7 @@ public:
 
     };
 
-    tf::StampedTransform lftransform_;
-    tf::TransformListener tflistener_lf_;
-
-
-    tf::StampedTransform lbtransform_;
-    tf::TransformListener tflistener_lb_;
-
-    tf::StampedTransform rftransform_;
-    tf::TransformListener tflistener_rf_;
-
-
-    tf::StampedTransform rbtransform_;
-    tf::TransformListener tflistener_rb_;
-
-
-    tf::StampedTransform fwltransform_;
-    tf::TransformListener tflistener_fwl_;
-
-
-    tf::StampedTransform fwrtransform_;
-    tf::TransformListener tflistener_fwr_;
-
-
-    double sensor_sigma_;
+   double sensor_sigma_;
 
     mypoint all_particles_[N_PARTICLES];
 
@@ -236,6 +221,8 @@ public:
     void encoderCallback(const ras_arduino_msgs::Encoders encodermsg);
 
     void resample();
+
+    void draw_cool_laser(double x1, double y1, double x2, double y2,double color);
 
     void update();
 
@@ -288,6 +275,7 @@ public:
 
     int sign(double val);
 
-    void printParticles();
+    void print_five_particles();
 
 };
+
