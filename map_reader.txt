@@ -1,0 +1,63 @@
+using namespace std;
+
+    ros::init(argc, argv, "test_map_importer_node");
+    ros::NodeHandle n("~");
+    localization_node l_node;
+
+    string _map_file = "mapdata.txt";
+
+
+    ROS_INFO_STREAM("Loading the maze map from " << _map_file);
+    ROS_INFO_STREAM("The maze map will be published in frame " << "/map");
+    ROS_INFO_STREAM("The maze map will be published on topic " << "/test_map");
+
+    //std::ifstream map_fs; map_fs.open(_map_file.c_str());
+    std::ifstream map_fs;
+    map_fs.open(_map_file.c_str());
+
+    if (!map_fs.is_open()){
+        ROS_ERROR_STREAM("Could not read maze map from "<<"mapdata.txt"<<". Please double check that the file exists. Aborting.");
+        return -1;
+    }
+
+    ros::Publisher vis_pub = n.advertise<visualization_msgs::MarkerArray>("/test_map", 0 );
+    
+    string line;
+
+
+    int wall_id = 0;
+    while (getline(map_fs, line)){
+
+        if (line[0] == '#') {
+            // comment -> skip
+            continue;
+        }
+
+        double max_num = std::numeric_limits<double>::max();
+        double x1= max_num,
+               x2= max_num,
+               y1= max_num,
+               y2= max_num;
+
+        std::istringstream line_stream(line);
+
+        line_stream >> x1 >> y1 >> x2 >> y2;
+
+        if ((x1 == max_num) || ( x2 == max_num) || (y1 == max_num) || (y2 == max_num)){
+            ROS_WARN("Segment error. Skipping line: %s",line.c_str());
+        }
+
+        
+
+        l_node.map_segments[wall_id].x1 = x1;
+        l_node.map_segments[wall_id].y1 = y1;
+
+        l_node.map_segments[wall_id].x2 = x2;
+        l_node.map_segments[wall_id].y2 = y2;
+
+        std::cout<<"Segment "<<wall_id<<"  "<<l_node.map_segments[wall_id].x1<<"  "<<l_node.map_segments[wall_id].y1<<"  "<<l_node.map_segments[wall_id].x2<<"  "<<l_node.map_segments[wall_id].y2<<"\n";
+
+        wall_id++;
+
+
+    }
